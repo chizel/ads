@@ -2,15 +2,24 @@
 # -*- coding: utf-8 -*-
 
 
+import sqlite3
 import os.path
 import urllib.request
 import urllib.parse
 import json
 
 
+#***************************************
+#*********TODO**************************
+# Date added stored in char > convert it to date type
+# id isn't unique > correct it
+#***************************************
+
+
 class Aru():
     MAIN_URL = 'https://auto.ria.com/'
     path_tolistofcars = './listofcars.json'
+    db_name = 'dbarucars.db'
 
     def __init__(self, category=4, price_min=0, price_max=0, currency=3,
                  countpage=100):
@@ -19,6 +28,15 @@ class Aru():
         self.price_min = price_min
         self.currency = currency
         self.countpage = countpage
+        return
+
+    def __create_inst__(self):
+        #create db
+        # Create table
+        #query = 'create table cars (id int, title char, added char, url char, uah int, usd int, brand char, model char);'
+        c.execute(query)
+
+        #create directory for WHAT?
         return
 
     def load_page(self, page=0):
@@ -57,31 +75,66 @@ class Aru():
         content = content.decode('utf8')
         return content
 
-
-def main():
-    tr = Aru(price_min=15000, price_max=45000)
-    #tr.load_page()
-    tr.get_cars_id()
-    # ITERATE LIST OF CARS
-    for i in range(1, 10):
-        car = tr.load_car_info(tr.cars_ids[i])
-        with open('./cartmp', 'w', encoding='utf-8') as f:
-            f.write(car)
-        with open('./cartmp', 'r', encoding='utf-8') as f:
-            car = json.loads(f.read())
-
+    def show_car_info(self, car):
         fcar = {}
         fcar['$'] = car['USD']
-        fcar['title'] = car['title']
+        fcar['Заголовок'] = car['title']
         fcar['Добавлено'] = car['addDate']
         fcar['Модель'] = car['modelName']
         fcar['Марка'] = car['markName']
         fcar['грн'] = car['UAH']
         fcar['url'] = car['linkToView']
-
         for k, v in fcar.items():
             print(k, v)
-        print('+++++++++++++')
+        print('++++++++++++++++++++++++++')
+        return
+
+    def save_to_db(self, car):
+        self.cursor.executemany('INSERT INTO cars VALUES (?,?,?,?,?,?,?,?)',
+                car)
+        return
+
+    def get_all_cars(self):
+        self.conn = sqlite3.connect(self.db_name)
+        self.cursor = self.conn.cursor()
+        cars_list = []
+        for i in range(0, self.countpage):
+            print(int(self.cars_ids[i]))
+            exit()
+            item_exists = self.cursor.execute(
+                'select count(*) from cars where id=?',
+                (int(self.cars_ids[i])),)
+            print(item_exists)
+            exit()
+            car_info = self.load_car_info(self.cars_ids[i])
+            # save to file
+            #with open('./cartmp', 'w', encoding='utf-8') as f:
+                #f.write(car_info)
+            #with open('./cartmp', 'r', encoding='utf-8') as f:
+            #    car = json.loads(f.read())
+            car = json.loads(car_info)
+        #query = 'create table cars (id int, title char, added char, url char, uah int, usd int, brand char, model char);'
+            tmp = [self.cars_ids[i],
+            car['title'],
+            car['addDate'],
+            car['linkToView'],
+            car['UAH'],
+            car['USD'],
+            car['modelName'],
+            car['markName']]
+            cars_list.append(tmp)
+        self.save_to_db(cars_list)
+        self.conn.commit()
+        self.conn.close()
+        return
+
+
+def main():
+    tr = Aru(countpage=100, price_min=15000, price_max=45000)
+    #tr.load_page()
+    tr.get_cars_id()
+    tr.get_all_cars()
+    # ITERATE LIST OF CARS
     #domain = 'https://auto.ria.com/'
     #response = urllib.request.urlopen(domain + fcar['url'])
     #content = response.read()
