@@ -13,6 +13,7 @@ import json
 #*********TODO**************************
 # Date added stored in char > convert it to date type
 # id isn't unique > correct it
+# add date add was fetched from the site
 #***************************************
 
 
@@ -33,7 +34,7 @@ class Aru():
     def __create_inst__(self):
         #create db
         # Create table
-        #query = 'create table cars (id int, title char, added char, url char, uah int, usd int, brand char, model char);'
+        #query = create table cars (id int, title char, added datetime, url char, uah int, usd int, brand char, model char);
         c.execute(query)
 
         #create directory for WHAT?
@@ -98,23 +99,24 @@ class Aru():
         self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
         cars_list = []
-        for i in range(0, self.countpage):
-            print(int(self.cars_ids[i]))
-            exit()
+        for car_id in self.cars_ids:
+            # checkisn if car in the db
             item_exists = self.cursor.execute(
                 'select count(*) from cars where id=?',
-                (int(self.cars_ids[i])),)
-            print(item_exists)
-            exit()
-            car_info = self.load_car_info(self.cars_ids[i])
+            (int(car_id),))
+            if self.cursor.fetchone()[0]:
+                continue
+
+            print('loading car: ', car_id)
+            # car isn't in the db, fetching it from the site
+            car_info = self.load_car_info(car_id)
             # save to file
             #with open('./cartmp', 'w', encoding='utf-8') as f:
                 #f.write(car_info)
             #with open('./cartmp', 'r', encoding='utf-8') as f:
             #    car = json.loads(f.read())
             car = json.loads(car_info)
-        #query = 'create table cars (id int, title char, added char, url char, uah int, usd int, brand char, model char);'
-            tmp = [self.cars_ids[i],
+            tmp = [car_id,
             car['title'],
             car['addDate'],
             car['linkToView'],
@@ -131,7 +133,7 @@ class Aru():
 
 def main():
     tr = Aru(countpage=100, price_min=15000, price_max=45000)
-    #tr.load_page()
+    tr.load_page()
     tr.get_cars_id()
     tr.get_all_cars()
     # ITERATE LIST OF CARS
