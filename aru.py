@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 
@@ -11,9 +11,7 @@ import json
 
 #***************************************
 #*********TODO**************************
-# Date added stored in char > convert it to date type
-# id isn't unique > correct it
-# add date add was fetched from the site
+# add date ad was fetched from the site
 #***************************************
 
 
@@ -34,10 +32,10 @@ class Aru():
     def __create_inst__(self):
         #create db
         # Create table
-        #query = create table cars (id int, title char, added datetime, url char, uah int, usd int, brand char, model char);
-        c.execute(query)
-
-        #create directory for WHAT?
+        #query = '
+        #create table cars (id int primary key, title char, added datetime, url char, uah int, usd int, brand char, model       char);
+        #'
+        #c.execute(query)
         return
 
     def load_page(self, page=0):
