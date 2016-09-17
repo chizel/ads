@@ -33,7 +33,8 @@ class Aru():
         #create db
         # Create table
         #query = '
-        #create table cars (id int primary key, title char, added datetime, url char, uah int, usd int, brand char, model       char);
+        #create table cars (id int primary key, title char, added datetime,
+        #url char, uah int, usd int, brand char, model       char);
         #'
         #c.execute(query)
         return
@@ -86,42 +87,48 @@ class Aru():
         for k, v in fcar.items():
             print(k, v)
         print('++++++++++++++++++++++++++')
-        return
 
     def save_to_db(self, car):
-        self.cursor.executemany('INSERT INTO cars VALUES (?,?,?,?,?,?,?,?)',
-                car)
-        return
+        self.cursor.executemany(
+            'INSERT INTO cars VALUES (?,?,?,?,?,?,?,?)',
+            car)
 
     def get_all_cars(self):
         self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
         cars_list = []
         for car_id in self.cars_ids:
-            # checkisn if car in the db
+            # check if car in the db
             item_exists = self.cursor.execute(
                 'select count(*) from cars where id=?',
-            (int(car_id),))
+                (int(car_id),)
+                )
             if self.cursor.fetchone()[0]:
                 continue
 
             print('loading car: ', car_id)
             # car isn't in the db, fetching it from the site
             car_info = self.load_car_info(car_id)
+
             # save to file
             #with open('./cartmp', 'w', encoding='utf-8') as f:
                 #f.write(car_info)
+            # loading car from a filе (for testing)
             #with open('./cartmp', 'r', encoding='utf-8') as f:
             #    car = json.loads(f.read())
+
             car = json.loads(car_info)
             tmp = [car_id,
-            car['title'],
-            car['addDate'],
-            car['linkToView'],
-            car['UAH'],
-            car['USD'],
-            car['modelName'],
-            car['markName']]
+                   car['title'],
+                   car['addDate'],
+                   car['linkToView'],
+                   car['UAH'],
+                   car['USD'],
+                   car['modelName'],
+                   car['markName'],
+                   #car image
+                   #car['seoLinkF'],
+                   ]
             cars_list.append(tmp)
         self.save_to_db(cars_list)
         self.conn.commit()
