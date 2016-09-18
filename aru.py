@@ -18,7 +18,7 @@ import json
 class Aru():
     MAIN_URL = 'https://auto.ria.com/'
     path_tolistofcars = './listofcars.json'
-    db_name = 'dbarucars.db'
+    DB_NAME = 'dbarucars.db'
 
     def __init__(self, category=4, price_min=0, price_max=0, currency=3,
                  countpage=100):
@@ -94,7 +94,7 @@ class Aru():
             car)
 
     def get_all_cars(self):
-        self.conn = sqlite3.connect(self.db_name)
+        self.conn = sqlite3.connect(self.DB_NAME)
         self.cursor = self.conn.cursor()
         cars_list = []
         for car_id in self.cars_ids:
