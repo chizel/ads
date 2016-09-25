@@ -51,6 +51,7 @@ class Rstua():
             title = tmp_tag.span.contents[0]
             title = title.lower()
             image_link = tmp_tag.img['src']
+
             uah = ad.ul.contents[0].span.contents[0]
             # remove грн
             uah = uah.split()[0]
@@ -60,14 +61,15 @@ class Rstua():
                 uah = int(uah)
             except:
                 uah = 0
-            location = ad.ul.contentr[1].span.contents[0]
+
+            location = ad.ul.content[1].span.contents[0]
             tmp_tag = ad.find('div', attrs={'class': 'rst-ocb-i-s'})
             ad_date = self.make_date(tmp_tag.contents[1])
             #print([title, url, uah, location, image_link])
             ad_data.append([title, url, uah, ad_date, location, image_link])
-        self.save_to_db(ad_data)
-        conn.commit()
-        conn.close()
+#        self.save_to_db(ad_data)
+        #conn.commit()
+#        conn.close()
 
     def make_date(self, sdate):
         date_info = sdate.split()
@@ -89,13 +91,13 @@ def main():
         'category': 'specialtech',
         'min_price': 500,
         'max_price': 2000,
-
         }
     rst = Rstua(**params)
-    for i in range(1, 300):
-        rst.get_page(page_id=i, from_web=True)
+
+    for i in range(1, 30):
+        rst.get_page(page_id=i, from_web=False)
         print(i)
-    return
+        exit()
 
 
 if __name__ == "__main__":

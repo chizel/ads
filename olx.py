@@ -39,15 +39,15 @@ class Olx():
         self.url += 'q-' + urllib.parse.quote(query)
         self.url += '?' + params
 
-    def get_page(self, page_id=0, from_web=True):
+    def get_page(self, page_id=1, from_web=True):
         if from_web:
-            response = urlopen(self.url)
+            response = urlopen(self.url + '&page=' + str(page_id))
             content = response.read()
             content = content.decode('utf8')
             with open('./pageolx.html', 'w', encoding='utf-8') as f:
                 f.write(content)
-            print('Page loaded')
-            s = BeautifulSoup(response.read())
+            print('loading page:', self.url + '&page=' + str(page_id))
+            s = BeautifulSoup(content)
         else:
             with open('./pageolx.html', 'r') as f:
                 s = BeautifulSoup(f.read())
@@ -83,9 +83,11 @@ class Olx():
                 'select count(*) from olxcars where url=?',
                 (url,)
                 )
+
             if self.cursor.fetchone()[0]:
                 continue
 
+            print(url)
             #TODO remove any special symbols (.,'", etc.)
             title = tmp_tag.strong.contents[0].lower()
 
@@ -96,7 +98,7 @@ class Olx():
 
             # extracting price
             tmp_tag = ad.find('p', attrs={'class': 'price'})
-            tmp_price = re_price.search(str(tmp_tag.strong)).group(1)
+            tmp_price = tmp_tag.strong.contents[0]
             # remove 'грн.'
             tmp_price = tmp_price.split()
             price = ''.join(tmp_price[:-1])
@@ -159,7 +161,8 @@ def main():
     }
     olx = Olx(query, **params)
     olx.convert_date('9 сент.')
-    olx.get_page(from_web=False)
+    for i in range(1, 4):
+        olx.get_page(page_id=i, from_web=True)
     return
 
 
