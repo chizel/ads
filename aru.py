@@ -9,7 +9,6 @@ import urllib.parse
 import json
 
 
-#***************************************
 #*********TODO**************************
 # add date ad was fetched from the site
 #***************************************
@@ -27,7 +26,6 @@ class Aru():
         self.price_min = price_min
         self.currency = currency
         self.countpage = countpage
-        return
 
     def __create_inst__(self):
         #create db
@@ -37,7 +35,7 @@ class Aru():
         #url char, uah int, usd int, brand char, model       char);
         #'
         #c.execute(query)
-        return
+        pass
 
     def load_page(self, page=0):
         '''load list of cars from auto.ria.ua by given parameters'''
@@ -58,7 +56,6 @@ class Aru():
         content = content.decode('utf8')
         with open('./listofcars.json', 'w', encoding='utf-8') as f:
             f.write(content)
-        return
 
     def get_cars_id(self):
         with open(self.path_tolistofcars, 'r', encoding='utf-8') as f:
@@ -121,7 +118,7 @@ class Aru():
             tmp = [car_id,
                    car['title'],
                    car['addDate'],
-                   car['linkToView'],
+                   self.MAIN_URL + car['linkToView'],
                    car['UAH'],
                    car['USD'],
                    car['modelName'],
@@ -141,13 +138,7 @@ def main():
     tr.load_page()
     tr.get_cars_id()
     tr.get_all_cars()
-    # ITERATE LIST OF CARS
-    #domain = 'https://auto.ria.com/'
-    #response = urllib.request.urlopen(domain + fcar['url'])
-    #content = response.read()
-    #content = content.decode('utf8')
-    #print(content)
-    return
+
 
 if __name__ == "__main__":
     main()

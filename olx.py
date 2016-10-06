@@ -24,17 +24,23 @@ class Olx():
     def make_url(self, query, category, subcategory, city,
                  min_price, max_price):
         self.url = self.DOMAIN
+
         if category:
             self.url += category + '/'
             if subcategory:
                 self.url += subcategory + '/'
+
         params_dict = {}
+
         if city:
             self.url += city + '/'
+
         if min_price:
             params_dict['search[filter_float_price%3Afrom]'] = min_price
+
         if max_price:
             params_dict['search[filter_float_price%3Ato]'] = max_price
+
         params = urllib.parse.urlencode(params_dict)
         self.url += 'q-' + urllib.parse.quote(query)
         self.url += '?' + params
