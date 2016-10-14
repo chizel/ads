@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 
 class Rstua():
     DOMAIN = 'http://rst.ua/oldcars/'
-    DB_NAME = 'dbarucars.db'
+    DB_NAME = 'tractors.db'
 
     def __init__(self, category, min_price=0, max_price=0):
         self.make_url(category, min_price, max_price)
@@ -29,12 +29,12 @@ class Rstua():
             response = urlopen(self.url + 'start=' + str(page_id))
             content = response.read()
             content = content.decode('windows-1251')
-            with open('./pagerst.html', 'w', encoding='utf-8') as f:
+            with open('./tmp/pagerst.html', 'w', encoding='utf-8') as f:
                 f.write(content)
             print('Loading page:', page_id)
             s = BeautifulSoup(content)
         else:
-            with open('./pagerst.html', 'r') as f:
+            with open('./tmp/pagerst.html', 'r') as f:
                 s = BeautifulSoup(f.read())
 
         # connecting to db
@@ -43,6 +43,7 @@ class Rstua():
 
         ad_data = []
         ads = s.findAll('div', attrs={'class': 'rst-ocb-i '})
+        loaded = False
 
         for ad in ads:
             tmp_tag = ad.find('a')
@@ -51,7 +52,7 @@ class Rstua():
 
             # check if ad in the db
             item_exists = self.cursor.execute(
-                'select count(*) from rstcars where url=?',
+                'select count(*) from tractors where url=?',
                 (url,)
                 )
 
@@ -60,7 +61,14 @@ class Rstua():
 
             title = tmp_tag.span.contents[0]
             title = title.lower()
-            image_link = tmp_tag.img['src']
+
+            # I need only UMZ without MTZ
+            if title.find('юмз') == -1 or title.find('мтз') > -1:
+                continue
+
+            print('Loading : ', url)
+            loaded = True
+            image = tmp_tag.img['src']
 
             uah = ad.ul.contents[0].span.contents[0]
             # remove грн
@@ -76,10 +84,14 @@ class Rstua():
             tmp_tag = ad.find('div', attrs={'class': 'rst-ocb-i-s'})
             ad_date = self.make_date(tmp_tag.contents[1])
             #print([title, url, uah, location, image_link])
-            ad_data.append([title, url, uah, ad_date, location, image_link])
-        self.save_to_db(ad_data)
-        conn.commit()
-        conn.close()
+            ad_data.append([url, title, uah, ad_date, location, image])
+
+        if loaded:
+            self.save_to_db(ad_data)
+            conn.commit()
+            conn.close()
+        else:
+            exit()
 
     def make_date(self, sdate):
         date_info = sdate.split()
@@ -92,7 +104,9 @@ class Rstua():
         #create table rstcars (title char, url char primary key unique,
                # uah int, added datetime, location char, image_link char);
         self.cursor.executemany(
-            'INSERT INTO rstcars VALUES (?,?,?,?,?,?)',
+            '''INSERT OR IGNORE INTO tractors
+            (url, title, uah, added, location, image)
+            VALUES (?,?,?,?,?,?)''',
             ad_data)
 
 

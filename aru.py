@@ -9,39 +9,24 @@ import urllib.parse
 import json
 
 
-#*********TODO**************************
-# add date ad was fetched from the site
-#***************************************
-
-
 class Aru():
     MAIN_URL = 'https://auto.ria.com/'
-    path_tolistofcars = './listofcars.json'
-    DB_NAME = 'dbarucars.db'
+    path_tolistofcars = './tmp/listofcars.json'
+    DB_NAME = 'tractors.db'
 
-    def __init__(self, category=4, price_min=0, price_max=0, currency=3,
+    def __init__(self, category=4, min_price=0, max_price=0, currency=3,
                  countpage=100):
         self.category = category
-        self.price_max = price_max
-        self.price_min = price_min
+        self.max_price = max_price
+        self.min_price = min_price
         self.currency = currency
         self.countpage = countpage
-
-    def __create_inst__(self):
-        #create db
-        # Create table
-        #query = '
-        #create table cars (id int primary key, title char, added datetime,
-        #url char, uah int, usd int, brand char, model       char);
-        #'
-        #c.execute(query)
-        pass
 
     def load_page(self, page=0):
         '''load list of cars from auto.ria.ua by given parameters'''
         params_dict = {
-            'price_do': self.price_max,
-            'price_ot': self.price_min,
+            'price_do': self.max_price,
+            'price_ot': self.min_price,
             'currency': self.currency,
             'page': page,
             'category_id': self.category,
@@ -54,7 +39,7 @@ class Aru():
         response = urllib.request.urlopen(url)
         content = response.read()
         content = content.decode('utf8')
-        with open('./listofcars.json', 'w', encoding='utf-8') as f:
+        with open(self.path_tolistofcars, 'w', encoding='utf-8') as f:
             f.write(content)
 
     def get_cars_id(self):
@@ -65,76 +50,75 @@ class Aru():
     def load_car_info(self, car_id):
         url = self.MAIN_URL + 'demo/bu/searchPage/v2/view/auto/'
         url += car_id
-        # maybe delete it?
         url += '/?lang_id=2'
         response = urllib.request.urlopen(url)
         content = response.read()
         content = content.decode('utf8')
         return content
 
-    def show_car_info(self, car):
-        fcar = {}
-        fcar['$'] = car['USD']
-        fcar['Заголовок'] = car['title']
-        fcar['Добавлено'] = car['addDate']
-        fcar['Модель'] = car['modelName']
-        fcar['Марка'] = car['markName']
-        fcar['грн'] = car['UAH']
-        fcar['url'] = car['linkToView']
-        for k, v in fcar.items():
-            print(k, v)
-        print('++++++++++++++++++++++++++')
-
-    def save_to_db(self, car):
+    def save_to_db(self, car, car_aru):
         self.cursor.executemany(
-            'INSERT INTO cars VALUES (?,?,?,?,?,?,?,?)',
+            '''INSERT OR IGNORE INTO tractors
+            (url, title, uah, usd, added, location, image)
+            VALUES (?,?,?,?,?,?,?)''',
             car)
+        self.cursor.executemany(
+            'INSERT OR IGNORE INTO aru (id, url) VALUES (?,?)', car_aru)
 
-    def get_all_cars(self):
+    def get_all_cars(self, save_to_file=False, load_from_file=False):
         self.conn = sqlite3.connect(self.DB_NAME)
         self.cursor = self.conn.cursor()
-        cars_list = []
+        cars = []
+        cars_aru = []
+
         for car_id in self.cars_ids:
             # check if car in the db
             item_exists = self.cursor.execute(
-                'select count(*) from cars where id=?',
-                (int(car_id),)
+                'SELECT COUNT(*) FROM aru WHERE id=?',
+                (car_id,)
                 )
             if self.cursor.fetchone()[0]:
                 continue
 
             print('loading car: ', car_id)
             # car isn't in the db, fetching it from the site
-            car_info = self.load_car_info(car_id)
 
-            # save to file
-            #with open('./cartmp', 'w', encoding='utf-8') as f:
-                #f.write(car_info)
-            # loading car from a filе (for testing)
-            #with open('./cartmp', 'r', encoding='utf-8') as f:
-            #    car = json.loads(f.read())
+            if save_to_file:
+                # save to a file
+                with open('./cartmp', 'w', encoding='utf-8') as f:
+                    f.write(car_info)
 
-            car = json.loads(car_info)
-            tmp = [car_id,
-                   car['title'],
-                   car['addDate'],
-                   self.MAIN_URL + car['linkToView'],
-                   car['UAH'],
-                   car['USD'],
-                   car['modelName'],
-                   car['markName'],
-                   #car image
-                   #car['seoLinkF'],
-                   ]
-            cars_list.append(tmp)
-        self.save_to_db(cars_list)
+            if load_from_file:
+                # loading car from a filе (for testing)
+                with open('./cartmp', 'r', encoding='utf-8') as f:
+                    car = json.loads(f.read())
+            else:
+                car_info = self.load_car_info(car_id)
+                car = json.loads(car_info)
+
+            url = self.MAIN_URL + car['linkToView'][1:]
+
+            tmp = [
+                url,
+                car['title'].lower(),
+                car['UAH'],
+                car['USD'],
+                car['addDate'],
+                car['stateData']['regionName'],
+                car['photoData']['seoLinkF'],
+                #car['modelName'],
+                #car['markName'],
+                ]
+            cars.append(tmp)
+            cars_aru.append([car_id, url])
+        self.save_to_db(cars, cars_aru)
         self.conn.commit()
         self.conn.close()
-        return
 
 
 def main():
-    tr = Aru(countpage=100, price_min=15000, price_max=45000)
+    # auto.ria.ua
+    tr = Aru(countpage=100, min_price=15000, max_price=45000)
     tr.load_page()
     tr.get_cars_id()
     tr.get_all_cars()
