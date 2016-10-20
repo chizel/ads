@@ -9,14 +9,14 @@ from bs4 import BeautifulSoup
 
 
 class Rstua():
-    DOMAIN = 'http://rst.ua/'
+    DOMAIN = 'http://rst.ua/oldcars/'
     DB_NAME = 'tractors.db'
 
     def __init__(self, category, min_price=0, max_price=0):
         self.make_url(category, min_price, max_price)
 
     def make_url(self, category, min_price, max_price):
-        self.url = self.DOMAIN + 'oldcars/'
+        self.url = self.DOMAIN
         self.url += category + '/?'
 
         if min_price:
@@ -47,8 +47,8 @@ class Rstua():
 
         for ad in ads:
             tmp_tag = ad.find('a')
-            url = self.DOMAIN[:-1]
-            url += tmp_tag['href']
+            url = self.DOMAIN
+            url += tmp_tag['href'][1:]
 
             # check if ad in the db
             item_exists = self.cursor.execute(

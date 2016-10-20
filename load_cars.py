@@ -14,7 +14,6 @@ def main():
     tr.get_cars_id()
     tr.get_all_cars()
 
-    exit()
     # olx.ua
     query = 'юмз'
     params = {
@@ -29,15 +28,18 @@ def main():
         olx.get_page(page_id=i, from_web=True)
 
     # rst.ua
+    loaded = True
+    i = 1
     params = {
         'category': 'specialtech',
-        'min_price': min_price,
-        'max_price': max_price
+        'min_price': 1000,
+        'max_price': 2000, 
         }
     rst = Rstua(**params)
 
-    for i in range(1, 100):
-        rst.get_page(page_id=i, from_web=True)
+    while loaded:
+        loaded = rst.get_page(page_id=i, from_web=True)
+        i += 1
 
 
 if __name__ == "__main__":

@@ -118,7 +118,7 @@ class Aru():
 
 def main():
     # auto.ria.ua
-    tr = Aru(countpage=100, min_price=15000, max_price=45000)
+    tr = Aru(countpage=100, min_price=20000, max_price=45000)
     tr.load_page()
     tr.get_cars_id()
     tr.get_all_cars()

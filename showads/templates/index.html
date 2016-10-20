@@ -1,0 +1,12 @@
+$def with (ads)
+
+$if ads:
+    $for ad in ads:
+        <div>
+            <a href="$ad.url">$ad.title [$ad.uah грн.]
+            <br /><img src="$ad.image" />
+            </a>
+            <hr />
+        </div>
+$else:
+    <em>Hello</em>, world!

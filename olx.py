@@ -50,12 +50,12 @@ class Olx():
             response = urlopen(self.url + '&page=' + str(page_id))
             content = response.read()
             content = content.decode('utf8')
-            with open('./pageolx.html', 'w', encoding='utf-8') as f:
+            with open('./tmp/pageolx.html', 'w', encoding='utf-8') as f:
                 f.write(content)
             print('loading page:', self.url + '&page=' + str(page_id))
             s = BeautifulSoup(content)
         else:
-            with open('./pageolx.html', 'r') as f:
+            with open('./tmp/pageolx.html', 'r') as f:
                 s = BeautifulSoup(f.read())
 
         ad_data = []
@@ -162,7 +162,7 @@ def main():
     params = {
         'category': 'transport',
         'subcategory': '',
-        'min_price': 15000,
+        'min_price': 20000,
         'max_price': 45000,
         #'currency': 'uah',
     }
