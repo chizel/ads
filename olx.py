@@ -107,10 +107,14 @@ class Olx():
             # extracting price
             tmp_tag = ad.find('p', attrs={'class': 'price'})
             tmp_price = tmp_tag.strong.contents[0]
-            # remove 'грн.'
-            tmp_price = tmp_price.split()
-            price = ''.join(tmp_price[:-1])
-            price = int(price)
+
+            if tmp_price.lower() == 'обмен':
+                price = -1
+            else:
+                # remove 'грн.'
+                tmp_price = tmp_price.split()
+                price = ''.join(tmp_price[:-1])
+                price = int(price)
 
             # extracting location
             tmp_tag = ad.find(
