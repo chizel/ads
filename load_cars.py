@@ -5,6 +5,7 @@ from olx import Olx
 from rstua import Rstua
 from aru import Aru
 
+
 def main():
     # auto.ria.ua
     min_price = 20000
@@ -17,6 +18,8 @@ def main():
     # olx.ua
     query = 'юмз'
     params = {
+        'db_name': 'tractors.db',
+        'table_name': 'tractors',
         'category': 'transport',
         'subcategory': '',
         'min_price': min_price,
@@ -33,7 +36,7 @@ def main():
     params = {
         'category': 'specialtech',
         'min_price': 1000,
-        'max_price': 2000, 
+        'max_price': 2000,
         }
     rst = Rstua(**params)
 

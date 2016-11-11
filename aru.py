@@ -4,18 +4,21 @@
 
 import sqlite3
 import os.path
-import urllib.request
+import urllib.error
 import urllib.parse
+import urllib.request
 import json
 
 
 class Aru():
     MAIN_URL = 'https://auto.ria.com/'
     path_tolistofcars = './tmp/listofcars.json'
-    DB_NAME = 'tractors.db'
 
     def __init__(self, category=4, min_price=0, max_price=0, currency=3,
                  countpage=100):
+        # TODO move it to params
+        self.db_name = 'tractors.db'
+        self.table_name = 'tractors'
         self.category = category
         self.max_price = max_price
         self.min_price = min_price
@@ -36,11 +39,17 @@ class Aru():
         params = urllib.parse.urlencode(params_dict)
         url = self.MAIN_URL + 'blocks_search_ajax/search/?'
         url += params
-        response = urllib.request.urlopen(url)
-        content = response.read()
-        content = content.decode('utf8')
-        with open(self.path_tolistofcars, 'w', encoding='utf-8') as f:
-            f.write(content)
+
+        try:
+            response = urllib.request.urlopen(url)
+            content = response.read()
+            content = content.decode('utf8')
+            with open(self.path_tolistofcars, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except urllib.error.HTTPError as e:
+            print('Error! %s' % e)
+            # we don't get list of cars, nothing to do here
+            exit()
 
     def get_cars_id(self):
         with open(self.path_tolistofcars, 'r', encoding='utf-8') as f:
@@ -49,12 +58,34 @@ class Aru():
 
     def load_car_info(self, car_id):
         url = self.MAIN_URL + 'demo/bu/searchPage/v2/view/auto/'
+
+        tmp = int(car_id[:-4])
+        digit = int(car_id[-4:-3])
+
+        if digit > 4:
+            tmp += 1
+
+        tmp = str(tmp)
+        url += tmp + '/'
+        tmp = int(car_id[:-2])
+        digit = int(car_id[-2:-1])
+
+        if digit > 4:
+            tmp += 1
+
+        tmp = str(tmp)
+        url += tmp + '/'
         url += car_id
         url += '/?lang_id=2'
-        response = urllib.request.urlopen(url)
-        content = response.read()
-        content = content.decode('utf8')
-        return content
+
+        try:
+            response = urllib.request.urlopen(url)
+            content = response.read()
+            content = content.decode('utf8')
+            return content
+        except urllib.error.HTTPError as e:
+            print('Error! %s' % e)
+        return None
 
     def save_to_db(self, car, car_aru):
         self.cursor.executemany(
@@ -66,7 +97,7 @@ class Aru():
             'INSERT OR IGNORE INTO aru (id, url) VALUES (?,?)', car_aru)
 
     def get_all_cars(self, save_to_file=False, load_from_file=False):
-        self.conn = sqlite3.connect(self.DB_NAME)
+        self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
         cars = []
         cars_aru = []
@@ -94,6 +125,9 @@ class Aru():
                     car = json.loads(f.read())
             else:
                 car_info = self.load_car_info(car_id)
+                if not car_info:
+                    print('Car ' + car_id + ' isn\'t loaded!')
+                    continue
                 car = json.loads(car_info)
 
             url = self.MAIN_URL + car['linkToView'][1:]

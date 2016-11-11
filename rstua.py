@@ -4,7 +4,8 @@
 import sqlite3
 import datetime
 import urllib.parse
-from urllib.request import urlopen
+import urllib.error
+from urllib.request
 from bs4 import BeautifulSoup
 
 
@@ -26,9 +27,18 @@ class Rstua():
 
     def get_page(self, page_id=1, from_web=True):
         if from_web:
-            response = urlopen(self.url + 'start=' + str(page_id))
+            page_url = self.url + 'start=' + str(page_id)
+
+            try:
+                response = urllib.urlopen(page_url)
+            except urllib.error.HTTPError as e:
+                print('Error! %s' % e)
+                print('Page isn\'t loaded! Url: ', page_url)
+                return
+
             content = response.read()
             content = content.decode('windows-1251')
+
             with open('./tmp/pagerst.html', 'w', encoding='utf-8') as f:
                 f.write(content)
             print('Loading page:', page_id)

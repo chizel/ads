@@ -1,28 +1,31 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import datetime
 import sqlite3
-from urllib.request import urlopen
+import datetime
 import urllib.parse
+import urllib.error
+import urllib.request
 from bs4 import BeautifulSoup
 
 
 class Olx():
-    DB_NAME = 'tractors.db'
     DOMAIN = 'http://www.olx.ua/'
     CITIES = (
         'don', 'artemovsk', 'soledar', 'krasnyyliman',
         'kramatorsk', 'slavyansk', 'konstantinovka',
         'lisichansk', 'severodonetsk')
 
-    def __init__(self, query, category='', subcategory='', city='',
-                 min_price=0, max_price=0):
+    def __init__(self, query, db_name, table_name, category='', subcategory='',
+                 city='', min_price=0, max_price=0):
+        self.db_name = db_name
+        self.table_name = table_name
         self.make_url(query, category, subcategory, city,
                       min_price, max_price)
 
     def make_url(self, query, category, subcategory, city,
                  min_price, max_price):
+        '''Generating url'''
         self.url = self.DOMAIN
 
         if category:
@@ -46,15 +49,27 @@ class Olx():
         self.url += '?' + params
 
     def get_page(self, page_id=1, from_web=True):
+        '''retrieving web page'''
         if from_web:
-            response = urlopen(self.url + '&page=' + str(page_id))
+            page_url = self.url + '&page=' + str(page_id)
+            try:
+                response = urllib.request.urlopen(page_url)
+            except urllib.error.HTTPError as e:
+                print('Error! %s' % e)
+                print('Page isn\'t loaded! Url: ', page_url)
+                return
+
             content = response.read()
             content = content.decode('utf8')
+
+            # saving page to the fie
             with open('./tmp/pageolx.html', 'w', encoding='utf-8') as f:
                 f.write(content)
+
             print('loading page:', self.url + '&page=' + str(page_id))
             s = BeautifulSoup(content)
         else:
+            # for testing load from local file
             with open('./tmp/pageolx.html', 'r') as f:
                 s = BeautifulSoup(f.read())
 
@@ -62,8 +77,13 @@ class Olx():
         ads = s.findAll('td', attrs={'class': 'offer'})
 
         # connecting to db
-        conn = sqlite3.connect(self.DB_NAME)
+        conn = sqlite3.connect(self.db_name)
         self.cursor = conn.cursor()
+
+        # query for checking is item already in the db
+        check_query = 'select count(*) from '
+        check_query += self.table_name
+        check_query += ' where url=?'
 
         for ad in ads:
             # empty ad
@@ -85,11 +105,7 @@ class Olx():
             url = url[:pos]
 
             # check if ad in the db
-            item_exists = self.cursor.execute(
-                'select count(*) from tractors where url=?',
-                (url,)
-                )
-
+            item_exists = self.cursor.execute(check_query, (url,))
             if self.cursor.fetchone()[0]:
                 continue
 
@@ -134,6 +150,7 @@ class Olx():
         conn.close()
 
     def convert_date(self, ad_date):
+        '''Converting date to standart'''
         ad_date = ad_date.strip()
         ad_date = ad_date.lower()
         if ad_date.find('сегодня') > -1:
@@ -151,6 +168,7 @@ class Olx():
         result += '-' + day
         return result
 
+    # TODO for every ad type different db and table schema
     def save_to_db(self, ad_data):
         self.cursor.executemany(
             '''INSERT OR IGNORE INTO tractors
@@ -164,6 +182,8 @@ def main():
     #subcat = 'selskohozyaystvennye-zhivotnye'
     query = 'юмз'
     params = {
+        'db_name': 'tractors.db',
+        'table_name': 'tractors',
         'category': 'transport',
         'subcategory': '',
         'min_price': 20000,
