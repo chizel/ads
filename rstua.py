@@ -3,9 +3,8 @@
 
 import sqlite3
 import datetime
-import urllib.parse
 import urllib.error
-from urllib.request
+import urllib.request
 from bs4 import BeautifulSoup
 
 
@@ -30,7 +29,7 @@ class Rstua():
             page_url = self.url + 'start=' + str(page_id)
 
             try:
-                response = urllib.urlopen(page_url)
+                response = urllib.request.urlopen(page_url)
             except urllib.error.HTTPError as e:
                 print('Error! %s' % e)
                 print('Page isn\'t loaded! Url: ', page_url)
