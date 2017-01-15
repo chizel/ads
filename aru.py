@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
 import sqlite3
 import os.path
 import urllib.error
@@ -14,11 +13,11 @@ class Aru():
     MAIN_URL = 'https://auto.ria.com/'
     path_tolistofcars = './tmp/listofcars.json'
 
-    def __init__(self, category=4, min_price=0, max_price=0, currency=3,
-                 countpage=100):
-        # TODO move it to params
-        self.db_name = 'tractors.db'
-        self.table_name = 'tractors'
+    def __init__(self, db_name, table_name,
+                 category=4, min_price=0, max_price=0,
+                 currency=3, countpage=100):
+        self.db_name = db_name
+        self.table_name = table_name
         self.category = category
         self.max_price = max_price
         self.min_price = min_price
@@ -87,12 +86,14 @@ class Aru():
             print('Error! %s' % e)
         return None
 
-    def save_to_db(self, car, car_aru):
-        self.cursor.executemany(
-            '''INSERT OR IGNORE INTO tractors
-            (url, title, uah, usd, added, location, image)
-            VALUES (?,?,?,?,?,?,?)''',
-            car)
+    def save_to_db(self, cars, car_aru):
+        query_string = 'INSERT OR IGNORE INTO '
+        query_string += self.table_name
+        query_string += '(url, title, uah, usd, added, location, image)'
+        query_string += 'VALUES (?,?,?,?,?,?,?)'
+        self.cursor.executemany(query_string, cars)
+
+        # index table for auto.ria.ua
         self.cursor.executemany(
             'INSERT OR IGNORE INTO aru (id, url) VALUES (?,?)', car_aru)
 
@@ -152,7 +153,14 @@ class Aru():
 
 def main():
     # auto.ria.ua
-    tr = Aru(countpage=100, min_price=20000, max_price=45000)
+    params = {
+        'db_name': 'ads.db',
+        'table_name': 'tractors',
+        'countpage': 100,
+        'min_price': 20000,
+        'max_price': 40000,
+        }
+    tr = Aru(**params)
     tr.load_page()
     tr.get_cars_id()
     tr.get_all_cars()

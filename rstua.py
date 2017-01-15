@@ -10,9 +10,11 @@ from bs4 import BeautifulSoup
 
 class Rstua():
     DOMAIN = 'http://rst.ua/'
-    DB_NAME = 'tractors.db'
 
-    def __init__(self, category, min_price=0, max_price=0):
+    def __init__(self, category, db_name, table_name,
+                 min_price=0, max_price=0):
+        self.db_name = db_name
+        self.table_name = table_name
         self.make_url(category, min_price, max_price)
 
     def make_url(self, category, min_price, max_price):
@@ -47,7 +49,7 @@ class Rstua():
                 s = BeautifulSoup(f.read())
 
         # connecting to db
-        conn = sqlite3.connect(self.DB_NAME)
+        conn = sqlite3.connect(self.db_name)
         self.cursor = conn.cursor()
 
         ad_data = []
@@ -60,12 +62,12 @@ class Rstua():
             url += tmp_tag['href']
 
             # check if ad in the db
-            item_exists = self.cursor.execute(
-                'select count(*) from tractors where url=?',
-                (url,)
-                )
-
+            query_str = 'SELECT COUNT(*) FROM '
+            query_str += self.table_name
+            query_str += ' WHERE url=?'
+            item_exists = self.cursor.execute(query_str, (url,))
             if self.cursor.fetchone()[0]:
+                # ad already in db, nothing to do
                 continue
 
             title = tmp_tag.span.contents[0]
@@ -110,18 +112,20 @@ class Rstua():
     def save_to_db(self, ad_data):
         #create table rstcars (title char, url char primary key unique,
                # uah int, added datetime, location char, image_link char);
-        self.cursor.executemany(
-            '''INSERT OR IGNORE INTO tractors
-            (url, title, uah, added, location, image)
-            VALUES (?,?,?,?,?,?)''',
-            ad_data)
+        query_string = 'INSERT OR IGNORE INTO '
+        query_string += self.table_name
+        query_string += '(url, title, uah, added, location, image)'
+        query_string += 'VALUES (?,?,?,?,?,?)'
+        self.cursor.executemany(query_string, ad_data)
 
 
 def main():
     params = {
+        'db_name': 'ads.db',
+        'table_name': 'tractors',
         'category': 'specialtech',
         'min_price': 1000,
-        'max_price': 2000,
+        'max_price': 1500,
         }
     rst = Rstua(**params)
 

@@ -6,14 +6,15 @@ import web
 render = web.template.render('templates/')
 
 urls = (
-    '/', 'index'
+    '/', 'index',
+    '/calfs/', 'calfs'
     )
 
 
 class index:
     def GET(self):
         myvar = {'yt': '%юмз%', 'nt': '%мтз%'}
-        db = web.database(dbn='sqlite', db='../tractors.db')
+        db = web.database(dbn='sqlite', db='../ads.db')
         ads = db.select(
             'tractors',
             myvar,
@@ -21,6 +22,15 @@ class index:
             order='date(added) desc',
             limit=50)
         return render.index(ads)
+
+class calfs:
+    def GET(self):
+        db = web.database(dbn='sqlite', db='../ads.db')
+        ads = db.select(
+            'calfs',
+            order='date(added) desc',
+            limit=50)
+        return render.calfs(ads)
 
 
 def main():

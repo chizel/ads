@@ -7,37 +7,35 @@ from aru import Aru
 
 
 def main():
+    params = {
+        'db_name': 'ads.db',
+        'table_name': 'tractors',
+        'min_price': 20000,
+        'max_price': 40000,
+        #'currency': 'uah',
+    }
+
     # auto.ria.ua
-    min_price = 20000
-    max_price = 45000
-    tr = Aru(countpage=100, min_price=min_price, max_price=max_price)
+    tr = Aru(countpage=100, **params)
     tr.load_page()
     tr.get_cars_id()
     tr.get_all_cars()
 
     # olx.ua
     query = 'юмз'
-    params = {
-        'db_name': 'tractors.db',
-        'table_name': 'tractors',
-        'category': 'transport',
-        'subcategory': '',
-        'min_price': min_price,
-        'max_price': max_price,
-        #'currency': 'uah',
-    }
+    params['category'] = 'transport'
     olx = Olx(query, **params)
-    for i in range(1, 4):
-        olx.get_page(page_id=i, from_web=True)
+    for i in range(1, 10):
+        resp = olx.get_page(page_id=i, from_web=True)
+        if resp == 'Redirect':
+            break
 
     # rst.ua
     loaded = True
     i = 1
-    params = {
-        'category': 'specialtech',
-        'min_price': 1000,
-        'max_price': 2000,
-        }
+    params['category'] = 'specialtech'
+    params['min_price'] = 900
+    params['max_price'] = 1500
     rst = Rstua(**params)
 
     while loaded:

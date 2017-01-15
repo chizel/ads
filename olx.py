@@ -10,11 +10,15 @@ from bs4 import BeautifulSoup
 
 
 class Olx():
-    DOMAIN = 'http://www.olx.ua/'
+    DOMAIN = 'https://www.olx.ua/'
     CITIES = (
         'don', 'artemovsk', 'soledar', 'krasnyyliman',
         'kramatorsk', 'slavyansk', 'konstantinovka',
         'lisichansk', 'severodonetsk')
+
+    MONTHS = {'янв.': '01', 'фев.': '02', 'март': '03', 'апр.': '04',
+              'май': '05', 'июнь': '06', 'июль': '07', 'авг.': '08',
+              'сент.': '09', 'окт.': '10', 'нояб.': '11', 'дек.': '12'}
 
     def __init__(self, query, db_name, table_name, category='', subcategory='',
                  city='', min_price=0, max_price=0):
@@ -46,27 +50,44 @@ class Olx():
 
         params = urllib.parse.urlencode(params_dict)
         self.url += 'q-' + urllib.parse.quote(query)
-        self.url += '?' + params
+        self.url += '/?' + params
 
     def get_page(self, page_id=1, from_web=True):
         '''retrieving web page'''
         if from_web:
-            page_url = self.url + '&page=' + str(page_id)
+            page_url = self.url
+            if page_id > 1:
+                page_url += '&page=' + str(page_id)
+
+            req = urllib.request.Request(page_url)
+            req.add_header(
+                'user-agent',
+                '''Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36
+                (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36'''
+                )
             try:
-                response = urllib.request.urlopen(page_url)
+                response = urllib.request.urlopen(req)
             except urllib.error.HTTPError as e:
                 print('Error! %s' % e)
                 print('Page isn\'t loaded! Url: ', page_url)
                 return
 
+            if response.url != page_url:
+                print('REDIRECT!', page_url)
+                return 'Redirect'
+
             content = response.read()
             content = content.decode('utf8')
+
+            if content.find('Не найдено ни одного объявления') > -1:
+                print('Не найдено ни одного объявления: ', page_url)
+                return
 
             # saving page to the fie
             with open('./tmp/pageolx.html', 'w', encoding='utf-8') as f:
                 f.write(content)
 
-            print('loading page:', self.url + '&page=' + str(page_id))
+            print('loading page:', page_url)
             s = BeautifulSoup(content)
         else:
             # for testing load from local file
@@ -159,41 +180,45 @@ class Olx():
             return datetime.date.today() - datetime.timedelta(1)
         day, month_name = ad_date.split()
 
-        months = {
-            'янв.': '01', 'фев.': '02', 'март': '03', 'апр.': '04',
-            'май': '05', 'июнь': '06', 'июль': '07', 'авг.': '08',
-            'сент.': '09', 'окт.': '10', 'нояб.': '11', 'дек.': '12'}
+        # add 0
+        if len(day) == 1:
+            day = '0' + day
 
-        result = str(datetime.date.today().year) + '-' + months[month_name]
+        # current year or previous
+        if datetime.date.today().month < int(self.MONTHS[month_name]):
+            result = str(datetime.date.today().year - 1)
+        else:
+            result = str(datetime.date.today().year)
+
+        result += '-' + self.MONTHS[month_name]
         result += '-' + day
         return result
 
-    # TODO for every ad type different db and table schema
     def save_to_db(self, ad_data):
-        self.cursor.executemany(
-            '''INSERT OR IGNORE INTO tractors
-            (url, title, uah, added, location, image)
-            VALUES (?,?,?,?,?,?)''',
-            ad_data)
+        query_string = 'INSERT OR IGNORE INTO '
+        query_string += self.table_name
+        query_string += '(url, title, uah, added, location, image)'
+        query_string += 'VALUES (?,?,?,?,?,?)'
+        self.cursor.executemany(query_string, ad_data)
 
 
 def main():
-    #cat = 'zhivotnye'
-    #subcat = 'selskohozyaystvennye-zhivotnye'
     query = 'юмз'
     params = {
-        'db_name': 'tractors.db',
+        'db_name': 'ads.db',
         'table_name': 'tractors',
         'category': 'transport',
         'subcategory': '',
         'min_price': 20000,
-        'max_price': 45000,
+        'max_price': 40000,
         #'currency': 'uah',
     }
     olx = Olx(query, **params)
-    for i in range(1, 4):
-        olx.get_page(page_id=i, from_web=True)
-    return
+
+    for i in range(1, 10):
+        resp = olx.get_page(page_id=i, from_web=True)
+        if resp == 'Redirect':
+            return
 
 
 if __name__ == "__main__":

@@ -1,10 +1,9 @@
 $def with (ads)
-<h1><a href='/calfs/'>Calfs</a><br /></h1>
-
+<h1><a href='/'>Index</a><br /></h1>
 $if ads:
     $for ad in ads:
         <div>
-            <a href="$ad.url">$ad.added | $ad.title | $ad.uah грн.
+            <a href="$ad.url">$ad.location | $ad.added | $ad.title | $ad.uah грн.
             <br /><img src="$ad.image" />
             </a>
             <hr />
